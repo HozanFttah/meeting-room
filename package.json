@@ -1,0 +1,19 @@
+{
+  "name": "seminar-room-calendar",
+  "version": "1.0.0",
+  "description": "Cloud-hosted seminar room booking system",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
+    "basic-auth": "^2.0.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

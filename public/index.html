@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Room Calendar</title>
+    <style>
+        :root {
+            --primary-color: #6c5ce7;
+            --primary-light: #e0d8ff;
+            --danger-color: #ff7675;
+            --success-color: #00b894;
+            --warning-color: #fdcb6e;
+            --light-bg: #f8f9fa;
+            --border-color: #dfe6e9;
+            --text-color: #2d3436;
+            --text-light: #636e72;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            --card-shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+            --user-event-color: #a29bfe;
+            --user-event-light: #f0edff;
+            --other-event-color: #74b9ff;
+            --other-event-light: #e8f4ff;
+            --notification-bg: #2d3436;
+            --cute-pink: #fd79a8;
+            --soft-blue: #a5d8ff;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            background-color: #f9f7ff;
+            background-image: linear-gradient(135deg, #f5f7fa 0%, #f9f9f9 100%);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-color);
+            font-weight: 700;
+            position: relative;
+            display: inline-block;
+            background: linear-gradient(to right, #6c5ce7, #a29bfe);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(to right, #6c5ce7, #a29bfe);
+            border-radius: 2px;
+        }
+
+        input:invalid {
+            border-color: var(--danger-color);
+        }
+
+        input:invalid:focus {
+            box-shadow: 0 0 0 3px rgba(255, 118, 117, 0.2);
+        }
+        
+        .auth-section {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            background: linear-gradient(to bottom right, white, #f8f9fa);
+        }
+        
+        .user-info {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .user-info i {
+            color: var(--primary-color);
+        }
+        
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+            background: linear-gradient(to bottom right, white, #f8f9fa);
+        }
+        
+        .month-year {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .month-year i {
+            color: var(--primary-color);
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .day-header {
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 10px 5px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+        }
+        
+        .calendar-day {
+            background-color: white;
+            border: 1px solid var(--border-color);
+            min-height: 100px;
+            padding: 10px;
+            position: relative;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+            background: linear-gradient(to bottom right, white, #f8f9fa);
+        }
+        
+        .calendar-day:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--card-shadow-hover);
+            background: white;
+        }
+        
+        .day-number {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            color: var(--text-light);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+        
+        .today .day-number {
+            color: white;
+            background: linear-gradient(to bottom right, #6c5ce7, #a29bfe);
+            box-shadow: 0 2px 4px rgba(108, 92, 231, 0.3);
+        }
+        
+        .event {
+            border-radius: 6px;
+            padding: 6px;
+            margin: 4px 0;
+            font-size: 0.75rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            position: relative;
+            transition: var(--transition);
+            border-left: 3px solid var(--other-event-color);
+            background-color: var(--other-event-light);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .event:hover {
+            transform: translateX(2px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        
+        .event.own-event {
+            border-left-color: var(--user-event-color);
+            background-color: var(--user-event-light);
+        }
+        
+        .event.own-event:hover {
+            background-color: #e2d9ff;
+        }
+        
+        .delete-event {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+            line-height: 16px;
+            cursor: pointer;
+            display: none;
+            transition: var(--transition);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .event:hover .delete-event {
+            display: block;
+        }
+        
+        .delete-event:hover {
+            background-color: #d63031;
+            transform: scale(1.1);
+        }
+        
+        .event-creator {
+            font-size: 0.65rem;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+        
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        button:hover:not(:disabled) {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        button.secondary {
+            background-color: white;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        
+        button.secondary:hover:not(:disabled) {
+            background-color: #f8f9fa;
+            border-color: #dee2e6;
+        }
+        
+        button.danger {
+            background-color: var(--danger-color);
+        }
+        
+        button.danger:hover:not(:disabled) {
+            background-color: #d63031;
+        }
+        
+        .status-bar {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 1.5rem;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+            background: linear-gradient(to bottom right, white, #f8f9fa);
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .status-available {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .status-booked {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .next-event {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .next-event i {
+            color: var(--primary-color);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(3px);
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 450px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            animation: modalFadeIn 0.3s ease-out;
+            border: 1px solid var(--border-color);
+            background: linear-gradient(to bottom right, white, #f8f9fa);
+        }
+        
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-title {
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-color);
+            position: relative;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .modal-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 40px;
+            height: 3px;
+            background: linear-gradient(to right, #6c5ce7, #a29bfe);
+            border-radius: 2px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        label i {
+            color: var(--primary-color);
+            font-size: 0.9em;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: inherit;
+            transition: var(--transition);
+            background-color: white;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.2);
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 25px;
+        }
+        
+        .file-ops {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+            background: linear-gradient(to bottom right, white, #f8f9fa);
+        }
+        
+        .file-ops button {
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        #file-status {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-left: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .error-message {
+            color: var(--danger-color);
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .success-message {
+            color: var(--success-color);
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Notification system */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            transform: translateX(150%);
+            transition: transform 0.3s ease-out;
+            max-width: 300px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background-color: rgba(0, 184, 148, 0.9);
+        }
+
+        .notification.error {
+            background-color: rgba(255, 118, 117, 0.9);
+        }
+
+        .notification.info {
+            background-color: rgba(108, 92, 231, 0.9);
+        }
+
+        .notification-icon {
+            font-size: 1.2rem;
+        }
+
+        .notification-close {
+            margin-left: 10px;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+
+        .notification-close:hover {
+            opacity: 1;
+        }
+        
+        /* Character counter */
+        .char-counter {
+            position: absolute;
+            right: 10px;
+            bottom: -18px;
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+        
+        .char-counter.warning {
+            color: var(--warning-color);
+        }
+        
+        .char-counter.error {
+            color: var(--danger-color);
+        }
+        
+        /* Language toggle */
+        .lang-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 99;
+            background: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
+        }
+        
+        .lang-toggle:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        }
+        
+        .lang-toggle:active {
+            transform: translateY(0);
+        }
+        
+        /* RTL support */
+        [dir="rtl"] {
+            text-align: right;
+        }
+        
+        [dir="rtl"] .modal-title::after {
+            left: auto;
+            right: 0;
+        }
+        
+        [dir="rtl"] h1::after {
+            left: auto;
+            right: 0;
+        }
+        
+        [dir="rtl"] .char-counter {
+            right: auto;
+            left: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .calendar-day {
+                min-height: 80px;
+            }
+            
+            .day-number {
+                font-size: 0.8rem;
+            }
+            
+            .event {
+                font-size: 0.75rem;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                position: relative;
+                white-space: normal;
+            }
+            .event small {
+                font-size: 0.65rem;
+                color: var(--text-light);
+            }
+            
+            button {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+            }
+            
+            .auth-section {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+
+            .notification {
+                top: 10px;
+                right: 10px;
+                max-width: calc(100% - 20px);
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .calendar-day {
+                min-height: 70px;
+                padding: 8px;
+            }
+            
+            .day-header {
+                font-size: 0.75rem;
+                padding: 8px 2px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .file-ops {
+                text-align: center;
+            }
+            
+            .file-ops button {
+                width: 100%;
+                margin-right: 0;
+            }
+            
+            #file-status {
+                display: block;
+                margin: 10px 0 0;
+                text-align: center;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .form-actions button {
+                width: 100%;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header-container" style="display: flex; align-items: center; gap: 15px; margin-bottom: 1.5rem;">
+            <img src="logo.png" alt="Company Logo" style="height: 120px;" onerror="this.style.display='none'">
+            <h1>Meeting Room Availability</h1>
+        </div>
+        
+        <!-- Authentication Section -->
+        <div class="auth-section" id="auth-section">
+            <div class="user-info" id="user-info">
+                <i class="fas fa-user-circle"></i>
+                <span id="auth-status">Not logged in</span>
+            </div>
+            <div class="auth-buttons" id="auth-buttons">
+                <button id="login-btn"><i class="fas fa-sign-in-alt"></i> Login</button>
+                <button class="secondary" id="signup-btn"><i class="fas fa-user-plus"></i> Sign Up</button>
+            </div>
+        </div>
+        
+        <div class="calendar-header">
+            <div class="month-year" id="current-month">
+                <i class="far fa-calendar-alt"></i>
+                <span>May 2025</span>
+            </div>
+            <div class="nav-buttons">
+                <button class="secondary" id="prev-month"><i class="fas fa-chevron-left"></i></button>
+                <button class="secondary" id="next-month"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="today-btn"><i class="fas fa-calendar-day"></i> Today</button>
+            <button id="add-event" disabled title="Please login to add bookings"><i class="fas fa-plus-circle"></i> Add Booking</button>
+        </div>
+        
+        <div class="calendar-grid" id="calendar-header">
+            <div class="day-header">Sun</div>
+            <div class="day-header">Mon</div>
+            <div class="day-header">Tue</div>
+            <div class="day-header">Wed</div>
+            <div class="day-header">Thu</div>
+            <div class="day-header">Fri</div>
+            <div class="day-header">Sat</div>
+        </div>
+        
+        <div class="calendar-grid" id="calendar"></div>
+        
+        <div class="status-bar">
+            <div>
+                <strong>Current Status:</strong> 
+                <span class="status-indicator status-available" id="current-status">
+                    <i class="fas fa-circle"></i>
+                    <span>Available</span>
+                </span>
+            </div>
+            <div class="next-event" id="next-event-info">
+                <i class="fas fa-info-circle"></i>
+                <span>No bookings today</span>
+            </div>
+        </div>
+        
+        <div class="file-ops">
+            <button id="load-data"><i class="fas fa-sync-alt"></i> Refresh Data</button>
+            <span id="file-status">
+                <i class="fas fa-cloud"></i>
+                <span>Connected to cloud</span>
+            </span>
+        </div>
+    </div>
+    
+    <!-- Login Modal -->
+    <div class="modal" id="login-modal">
+        <div class="modal-content">
+            <div class="modal-title">
+                <i class="fas fa-sign-in-alt"></i>
+                <span>Login</span>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">
+                        <i class="fas fa-envelope"></i>
+                        <span>Email</span>
+                    </label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">
+                        <i class="fas fa-lock"></i>
+                        <span>Password</span>
+                    </label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <div id="login-error" class="error-message" style="display: none;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span></span>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="secondary" id="cancel-login">
+                        <i class="fas fa-times"></i>
+                        <span>Cancel</span>
+                    </button>
+                    <button type="submit">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>Login</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Sign Up Modal -->
+    <div class="modal" id="signup-modal">
+        <div class="modal-content">
+            <div class="modal-title">
+                <i class="fas fa-user-plus"></i>
+                <span>Sign Up</span>
+            </div>
+            <form id="signup-form">
+                <div class="form-group">
+                    <label for="signup-email">
+                        <i class="fas fa-envelope"></i>
+                        <span>Email</span>
+                    </label>
+                    <input type="email" id="signup-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">
+                        <i class="fas fa-lock"></i>
+                        <span>Password</span>
+                    </label>
+                    <input type="password" id="signup-password" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="signup-confirm">
+                        <i class="fas fa-lock"></i>
+                        <span>Confirm Password</span>
+                    </label>
+                    <input type="password" id="signup-confirm" required minlength="6">
+                </div>
+                <div id="signup-error" class="error-message" style="display: none;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span></span>
+                </div>
+                <div id="signup-success" class="success-message" style="display: none;">
+                    <i class="fas fa-check-circle"></i>
+                    <span></span>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="secondary" id="cancel-signup">
+                        <i class="fas fa-times"></i>
+                        <span>Cancel</span>
+                    </button>
+                    <button type="submit">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Sign Up</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Add Event Modal -->
+    <div class="modal" id="event-modal">
+        <div class="modal-content">
+            <div class="modal-title">
+                <i class="fas fa-calendar-plus"></i>
+                <span>Add New Booking</span>
+            </div>
+            <form id="event-form">
+                <div class="form-group">
+                    <label for="event-title">
+                        <i class="fas fa-heading"></i>
+                        <span>Title</span>
+                    </label>
+                    <input type="text" id="event-title" required maxlength="40">
+                    <div class="char-counter" id="title-counter">0/40</div>
+                </div>
+                <div class="form-group">
+                    <label for="event-date">
+                        <i class="fas fa-calendar-day"></i>
+                        <span>Date</span>
+                    </label>
+                    <input type="date" id="event-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="event-start">
+                        <i class="fas fa-clock"></i>
+                        <span>Start Time</span>
+                    </label>
+                    <input type="time" id="event-start" required>
+                </div>
+                <div class="form-group">
+                    <label for="event-end">
+                        <i class="fas fa-clock"></i>
+                        <span>End Time</span>
+                    </label>
+                    <input type="time" id="event-end" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="secondary" id="cancel-event">
+                        <i class="fas fa-times"></i>
+                        <span>Cancel</span>
+                    </button>
+                    <button type="submit">
+                        <i class="fas fa-save"></i>
+                        <span>Save</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+    
+    <!-- Language Toggle -->
+    <div class="lang-toggle" id="lang-toggle">
+        <i class="fas fa-language" style="font-size: 1.2rem;"></i>
+    </div>
+    
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+<script>
+    // Supabase configuration
+    const supabaseUrl = 'https://iwjsexdylledniwqaxkf.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3anNleGR5bGxlZG5pd3FheGtmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODk2NzQ2MywiZXhwIjoyMDY0NTQzNDYzfQ.42su_3gNVRjypePkXn-55jFr8lbZLUy3BJ7TBqTNurk';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    // Data storage and initialization
+    let events = [];
+    let currentDate = new Date();
+    let currentUser = null;
+    let refreshInterval = null;
+    let currentLang = 'en'; // Default language
+
+    // DOM Elements
+    const calendarEl = document.getElementById('calendar');
+    const currentMonthEl = document.getElementById('current-month');
+    const currentStatusEl = document.getElementById('current-status');
+    const nextEventInfoEl = document.getElementById('next-event-info');
+    const eventModalEl = document.getElementById('event-modal');
+    const eventFormEl = document.getElementById('event-form');
+    const fileStatusEl = document.getElementById('file-status');
+    const authStatusEl = document.getElementById('auth-status');
+    const authButtonsEl = document.getElementById('auth-buttons');
+    const addEventBtn = document.getElementById('add-event');
+    const notificationContainer = document.getElementById('notification-container');
+    const titleCounterEl = document.getElementById('title-counter');
+    const langToggleEl = document.getElementById('lang-toggle');
+    
+    // Auth modals
+    const loginModalEl = document.getElementById('login-modal');
+    const signupModalEl = document.getElementById('signup-modal');
+    const loginFormEl = document.getElementById('login-form');
+    const signupFormEl = document.getElementById('signup-form');
+
+    // Translations
+    const translations = {
+        en: {
+            title: "Meeting Room Availability",
+            notLoggedIn: "Not logged in",
+            loggedInAs: "Logged in as: ",
+            login: "Login",
+            signup: "Sign Up",
+            logout: "Logout",
+            today: "Today",
+            addBooking: "Add Booking",
+            loginTitle: "Login",
+            email: "Email",
+            password: "Password",
+            cancel: "Cancel",
+            signupTitle: "Sign Up",
+            confirmPassword: "Confirm Password",
+            addBookingTitle: "Add New Booking",
+            eventTitle: "Title",
+            date: "Date",
+            startTime: "Start Time",
+            endTime: "End Time",
+            save: "Save",
+            currentStatus: "Current Status:",
+            available: "Available",
+            booked: "Booked",
+            noBookings: "No bookings today",
+            nextBooking: "Next booking:",
+            currentlyBooked: "Currently booked for:",
+            until: "until",
+            at: "at",
+            by: "by",
+            refreshData: "Refresh Data",
+            connected: "Connected to cloud",
+            loading: "Loading...",
+            loginSuccess: "Login successful!",
+            signupSuccess: "Please check your email for verification link!",
+            logoutSuccess: "Logged out successfully!",
+            bookingSaved: "Booking saved successfully!",
+            bookingDeleted: "Booking deleted successfully!",
+            loadError: "Failed to load bookings",
+            saveError: "Failed to save booking: ",
+            deleteError: "Failed to delete booking: ",
+            loginError: "Please login to add bookings",
+            pastDateError: "Cannot book dates in the past",
+            timeError: "End time must be after start time",
+            passwordMismatch: "Passwords do not match",
+            deleteConfirm: "Are you sure you want to delete this booking?",
+            ownBookingsOnly: "You can only delete your own bookings",
+            eventNotFound: "Event not found",
+            charLimit: "Title must be 40 characters or less"
+        },
+        ar: {
+            title: "توافر غرفة الاجتماعات",
+            notLoggedIn: "غير مسجل الدخول",
+            loggedInAs: "مسجل الدخول كـ: ",
+            login: "تسجيل الدخول",
+            signup: "تسجيل حساب",
+            logout: "تسجيل الخروج",
+            today: "اليوم",
+            addBooking: "إضافة حجز",
+            loginTitle: "تسجيل الدخول",
+            email: "البريد الإلكتروني",
+            password: "كلمة المرور",
+            cancel: "إلغاء",
+            signupTitle: "تسجيل حساب جديد",
+            confirmPassword: "تأكيد كلمة المرور",
+            addBookingTitle: "إضافة حجز جديد",
+            eventTitle: "عنوان الحجز",
+            date: "التاريخ",
+            startTime: "وقت البدء",
+            endTime: "وقت الانتهاء",
+            save: "حفظ",
+            currentStatus: "الحالة الحالية:",
+            available: "متاح",
+            booked: "محجوز",
+            noBookings: "لا توجد حجوزات اليوم",
+            nextBooking: "الحجز التالي:",
+            currentlyBooked: "محجوز حالياً لـ:",
+            until: "حتى",
+            at: "في",
+            by: "بواسطة",
+            refreshData: "تحديث البيانات",
+            connected: "متصل بالسحابة",
+            loading: "جاري التحميل...",
+            loginSuccess: "تم تسجيل الدخول بنجاح!",
+            signupSuccess: "يرجى التحقق من بريدك الإلكتروني للحصول على رابط التحقق!",
+            logoutSuccess: "تم تسجيل الخروج بنجاح!",
+            bookingSaved: "تم حفظ الحجز بنجاح!",
+            bookingDeleted: "تم حذف الحجز بنجاح!",
+            loadError: "فشل تحميل الحجوزات",
+            saveError: "فشل حفظ الحجز: ",
+            deleteError: "فشل حذف الحجز: ",
+            loginError: "يرجى تسجيل الدخول لإضافة حجوزات",
+            pastDateError: "لا يمكن حجز تواريخ في الماضي",
+            timeError: "يجب أن يكون وقت الانتهاء بعد وقت البدء",
+            passwordMismatch: "كلمات المرور غير متطابقة",
+            deleteConfirm: "هل أنت متأكد أنك تريد حذف هذا الحجز؟",
+            ownBookingsOnly: "يمكنك فقط حذف الحجوزات الخاصة بك",
+            eventNotFound: "الحدث غير موجود",
+            charLimit: "يجب أن يكون العنوان 40 حرفًا أو أقل"
+        }
+    };
+
+    // Apply translations to the page
+    function applyTranslations(lang) {
+        currentLang = lang;
+        document.documentElement.lang = lang;
+        document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+        
+        const t = translations[lang];
+        
+        // Update all elements with data-i18n attribute
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (t[key]) {
+                el.textContent = t[key];
+            }
+        });
+        
+        // Update specific elements
+        document.querySelector('h1').textContent = t.title;
+        document.getElementById('login-btn').innerHTML = `<i class="fas fa-sign-in-alt"></i> ${t.login}`;
+        document.getElementById('signup-btn').innerHTML = `<i class="fas fa-user-plus"></i> ${t.signup}`;
+        document.getElementById('today-btn').innerHTML = `<i class="fas fa-calendar-day"></i> ${t.today}`;
+        document.getElementById('add-event').innerHTML = `<i class="fas fa-plus-circle"></i> ${t.addBooking}`;
+        document.getElementById('load-data').innerHTML = `<i class="fas fa-sync-alt"></i> ${t.refreshData}`;
+        document.getElementById('file-status').innerHTML = `<i class="fas fa-cloud"></i> <span>${t.connected}</span>`;
+        
+        // Update auth status
+        if (currentUser) {
+            authStatusEl.innerHTML = `<i class="fas fa-user-circle"></i> <span>${t.loggedInAs}${currentUser.email}</span>`;
+        } else {
+            authStatusEl.innerHTML = `<i class="fas fa-user-circle"></i> <span>${t.notLoggedIn}</span>`;
+        }
+        
+        // Update modal titles
+        document.querySelector('#login-modal .modal-title').innerHTML = `<i class="fas fa-sign-in-alt"></i> <span>${t.loginTitle}</span>`;
+        document.querySelector('#signup-modal .modal-title').innerHTML = `<i class="fas fa-user-plus"></i> <span>${t.signupTitle}</span>`;
+        document.querySelector('#event-modal .modal-title').innerHTML = `<i class="fas fa-calendar-plus"></i> <span>${t.addBookingTitle}</span>`;
+        
+        // Update form labels
+        document.querySelector('#login-form label[for="login-email"]').innerHTML = `<i class="fas fa-envelope"></i> <span>${t.email}</span>`;
+        document.querySelector('#login-form label[for="login-password"]').innerHTML = `<i class="fas fa-lock"></i> <span>${t.password}</span>`;
+        document.querySelector('#signup-form label[for="signup-email"]').innerHTML = `<i class="fas fa-envelope"></i> <span>${t.email}</span>`;
+        document.querySelector('#signup-form label[for="signup-password"]').innerHTML = `<i class="fas fa-lock"></i> <span>${t.password}</span>`;
+        document.querySelector('#signup-form label[for="signup-confirm"]').innerHTML = `<i class="fas fa-lock"></i> <span>${t.confirmPassword}</span>`;
+        document.querySelector('#event-form label[for="event-title"]').innerHTML = `<i class="fas fa-heading"></i> <span>${t.eventTitle}</span>`;
+        document.querySelector('#event-form label[for="event-date"]').innerHTML = `<i class="fas fa-calendar-day"></i> <span>${t.date}</span>`;
+        document.querySelector('#event-form label[for="event-start"]').innerHTML = `<i class="fas fa-clock"></i> <span>${t.startTime}</span>`;
+        document.querySelector('#event-form label[for="event-end"]').innerHTML = `<i class="fas fa-clock"></i> <span>${t.endTime}</span>`;
+        
+        // Update buttons
+        document.querySelector('#login-form button[type="submit"]').innerHTML = `<i class="fas fa-sign-in-alt"></i> <span>${t.login}</span>`;
+        document.querySelector('#signup-form button[type="submit"]').innerHTML = `<i class="fas fa-user-plus"></i> <span>${t.signup}</span>`;
+        document.querySelector('#event-form button[type="submit"]').innerHTML = `<i class="fas fa-save"></i> <span>${t.save}</span>`;
+        document.getElementById('cancel-login').innerHTML = `<i class="fas fa-times"></i> <span>${t.cancel}</span>`;
+        document.getElementById('cancel-signup').innerHTML = `<i class="fas fa-times"></i> <span>${t.cancel}</span>`;
+        document.getElementById('cancel-event').innerHTML = `<i class="fas fa-times"></i> <span>${t.cancel}</span>`;
+        
+        // Update status bar
+        document.querySelector('.status-bar strong').textContent = `${t.currentStatus}`;
+        
+        // Update day headers
+        if (lang === 'ar') {
+            const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            document.querySelectorAll('.day-header').forEach((el, index) => {
+                el.textContent = days[index];
+            });
+        } else {
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            document.querySelectorAll('.day-header').forEach((el, index) => {
+                el.textContent = days[index];
+            });
+        }
+        
+        // Update month display
+        updateMonthDisplay();
+    }
+
+    // Update month display with translation
+    function updateMonthDisplay() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        
+        const monthNames = currentLang === 'ar' ? 
+            ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"] :
+            ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        
+        document.querySelector('#current-month span').textContent = `${monthNames[month]} ${year}`;
+    }
+
+    // Notification system
+    function showNotification(message, type = 'info', duration = 5000) {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        
+        let icon = '';
+        switch(type) {
+            case 'success':
+                icon = '<i class="fas fa-check-circle notification-icon"></i>';
+                break;
+            case 'error':
+                icon = '<i class="fas fa-exclamation-circle notification-icon"></i>';
+                break;
+            default:
+                icon = '<i class="fas fa-info-circle notification-icon"></i>';
+        }
+        
+        notification.innerHTML = `
+            ${icon}
+            <span>${message}</span>
+            <span class="notification-close"><i class="fas fa-times"></i></span>
+        `;
+        
+        notificationContainer.appendChild(notification);
+        
+        // Trigger reflow to enable animation
+        void notification.offsetWidth;
+        
+        notification.classList.add('show');
+        
+        // Close button
+        notification.querySelector('.notification-close').addEventListener('click', () => {
+            closeNotification(notification);
+        });
+        
+        // Auto-close after duration
+        if (duration) {
+            setTimeout(() => {
+                closeNotification(notification);
+            }, duration);
+        }
+        
+        return notification;
+    }
+    
+    function closeNotification(notification) {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }
+
+    // Authentication functions
+    async function checkAuthStatus() {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            currentUser = user;
+            updateAuthUI();
+            loadData();
+        } catch (error) {
+            console.error('Auth check error:', error);
+            updateAuthUI();
+        }
+    }
+
+    function updateAuthUI() {
+        const t = translations[currentLang];
+        
+        if (currentUser) {
+            authStatusEl.innerHTML = `<i class="fas fa-user-circle"></i> <span>${t.loggedInAs}${currentUser.email}</span>`;
+            authButtonsEl.innerHTML = '<button id="logout-btn" class="danger"><i class="fas fa-sign-out-alt"></i> ' + t.logout + '</button>';
+            addEventBtn.disabled = false;
+            addEventBtn.title = t.addBooking;
+            
+            document.getElementById('logout-btn').addEventListener('click', logout);
+        } else {
+            authStatusEl.innerHTML = `<i class="fas fa-user-circle"></i> <span>${t.notLoggedIn}</span>`;
+            authButtonsEl.innerHTML = `
+                <button id="login-btn"><i class="fas fa-sign-in-alt"></i> ${t.login}</button>
+                <button class="secondary" id="signup-btn"><i class="fas fa-user-plus"></i> ${t.signup}</button>
+            `;
+            addEventBtn.disabled = true;
+            addEventBtn.title = t.loginError;
+            
+            document.getElementById('login-btn').addEventListener('click', () => showModal('login-modal'));
+            document.getElementById('signup-btn').addEventListener('click', () => showModal('signup-modal'));
+        }
+    }
+
+    async function login(email, password) {
+        const t = translations[currentLang];
+        
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+
+            if (error) throw error;
+
+            currentUser = data.user;
+            hideModal('login-modal');
+            updateAuthUI();
+            showNotification(t.loginSuccess, 'success');
+        } catch (error) {
+            showError('login-error', error.message);
+        }
+    }
+
+    async function signup(email, password) {
+        const t = translations[currentLang];
+        
+        try {
+            const { data, error } = await supabase.auth.signUp({
+                email: email,
+                password: password
+            });
+
+            if (error) throw error;
+
+            showMessage(t.signupSuccess, 'success', 'signup-success');
+            document.getElementById('signup-form').reset();
+            showNotification(t.signupSuccess, 'success', 8000);
+        } catch (error) {
+            showError('signup-error', error.message);
+        }
+    }
+
+    async function logout() {
+        const t = translations[currentLang];
+        
+        try {
+            const { error } = await supabase.auth.signOut();
+            if (error) throw error;
+            
+            currentUser = null;
+            updateAuthUI();
+            showNotification(t.logoutSuccess, 'success');
+        } catch (error) {
+            console.error('Logout error:', error);
+            showNotification(t.deleteError + error.message, 'error');
+        }
+    }
+
+    // Data functions
+    async function loadData() {
+        const t = translations[currentLang];
+        
+        try {
+            fileStatusEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${t.loading}</span>`;
+            
+            // First try to fetch from our API endpoint
+            try {
+                const response = await fetch('/api/data');
+                if (!response.ok) throw new Error('API request failed');
+                const data = await response.json();
+                
+                events = data.map(item => ({
+                    id: item.id,
+                    title: item.title,
+                    date: item.date,
+                    startTime: item.startTime,
+                    endTime: item.endTime,
+                    userId: item.userId,
+                    userName: item.userName || 'Unknown'
+                }));
+                
+                renderCalendar();
+                updateStatus();
+                fileStatusEl.innerHTML = `<i class="fas fa-cloud"></i> <span>${t.connected}</span>`;
+                return;
+            } catch (apiError) {
+                console.log('API fetch failed, falling back to direct Supabase:', apiError);
+            }
+            
+            // Fallback to direct Supabase query if API fails
+            const { data, error } = await supabase
+                .from('bookings')
+                .select(`
+                    id,
+                    title,
+                    date,
+                    start_time,
+                    end_time,
+                    user_id
+                `)
+                .order('date', { ascending: true });
+
+            if (error) throw error;
+            
+            // For direct Supabase access, we can't get the email, so just show "You" for own events
+            events = data.map(item => ({
+                id: item.id,
+                title: item.title,
+                date: item.date,
+                startTime: item.start_time,
+                endTime: item.end_time,
+                userId: item.user_id,
+                userName: (currentUser && item.user_id === currentUser.id) ? 
+                    (currentLang === 'ar' ? 'أنت' : 'You') : 
+                    (currentLang === 'ar' ? 'مستخدم' : 'User')
+            }));
+            
+            renderCalendar();
+            updateStatus();
+            fileStatusEl.innerHTML = `<i class="fas fa-cloud"></i> <span>${t.connected}</span>`;
+        } catch (error) {
+            console.error('Load error:', error);
+            fileStatusEl.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>${t.loadError}</span>`;
+            showNotification(t.loadError, 'error');
+        }
+    }
+
+    function startAutoRefresh() {
+        // Load data immediately
+        loadData();
+        
+        // Then set up the interval (3000ms = 3 seconds)
+        refreshInterval = setInterval(loadData, 3000);
+    }
+
+    async function saveEvent(eventData) {
+        const t = translations[currentLang];
+        
+        if (!currentUser) {
+            showNotification(t.loginError, 'error');
+            return;
+        }
+
+        // Validate title length
+        if (eventData.title.length > 40) {
+            showNotification(t.charLimit, 'error');
+            return;
+        }
+
+        // Check for time slot conflicts
+        const conflicts = events.filter(event => {
+            // Only check events on the same date
+            if (event.date !== eventData.date) return false;
+            
+            // Convert times to minutes for easier comparison
+            const newStart = convertTimeToMinutes(eventData.startTime);
+            const newEnd = convertTimeToMinutes(eventData.endTime);
+            const existingStart = convertTimeToMinutes(event.startTime);
+            const existingEnd = convertTimeToMinutes(event.endTime);
+            
+            // Check for overlap
+            return (newStart < existingEnd && newEnd > existingStart);
+        });
+
+        if (conflicts.length > 0) {
+            const conflictTimes = conflicts.map(conflict => {
+                const start = convertTo12Hour(conflict.startTime);
+                const end = convertTo12Hour(conflict.endTime);
+                return `${start} - ${end}`;
+            }).join(', ');
+            
+            showNotification(`Time slot conflicts with existing booking(s): ${conflictTimes}`, 'error');
+            return;
+        }
+
+        try {
+            const id = Date.now();
+            
+            // First try to save via our API endpoint
+            try {
+                const response = await fetch('/api/data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${await supabase.auth.getSession().then(({ data }) => data.session?.access_token)}`
+                    },
+                    body: JSON.stringify([{
+                        id: id,
+                        title: eventData.title,
+                        date: eventData.date,
+                        startTime: eventData.startTime,
+                        endTime: eventData.endTime
+                    }])
+                });
+                
+                if (!response.ok) throw new Error('API save failed');
+                
+                events.push({
+                    id: id,
+                    title: eventData.title,
+                    date: eventData.date,
+                    startTime: eventData.startTime,
+                    endTime: eventData.endTime,
+                    userId: currentUser.id,
+                    userName: currentUser.email.split('@')[0]
+                });
+
+                renderCalendar();
+                updateStatus();
+                showNotification(t.bookingSaved, 'success');
+                return;
+            } catch (apiError) {
+                console.log('API save failed, falling back to direct Supabase:', apiError);
+            }
+            
+            // Fallback to direct Supabase if API fails
+            const { data, error } = await supabase
+                .from('bookings')
+                .insert([{
+                    id: id,
+                    title: eventData.title,
+                    date: eventData.date,
+                    start_time: eventData.startTime,
+                    end_time: eventData.endTime,
+                    user_id: currentUser.id
+                }]);
+
+            if (error) throw error;
+
+            events.push({
+                id: id,
+                title: eventData.title,
+                date: eventData.date,
+                startTime: eventData.startTime,
+                endTime: eventData.endTime,
+                userId: currentUser.id,
+                userName: currentLang === 'ar' ? 'أنت' : 'You'
+            });
+
+            renderCalendar();
+            updateStatus();
+            showNotification(t.bookingSaved, 'success');
+        } catch (error) {
+            console.error('Save error:', error);
+            showNotification(t.saveError + error.message, 'error');
+        }
+    }
+
+    // Helper function to convert time string to minutes
+    function convertTimeToMinutes(timeStr) {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return hours * 60 + minutes;
+    }
+
+    async function deleteEvent(eventId) {
+        const t = translations[currentLang];
+        const event = events.find(e => e.id == eventId);
+        
+        if (!event) {
+            showNotification(t.eventNotFound, 'error');
+            return;
+        }
+
+        if (!currentUser || event.userId !== currentUser.id) {
+            showNotification(t.ownBookingsOnly, 'error');
+            return;
+        }
+
+        if (!confirm(t.deleteConfirm)) {
+            return;
+        }
+
+        try {
+            // First try to delete via API
+            try {
+                const response = await fetch(`/api/data/${eventId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${await supabase.auth.getSession().then(({ data }) => data.session?.access_token)}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error('API delete failed');
+                
+                events = events.filter(e => e.id != eventId);
+                renderCalendar();
+                updateStatus();
+                showNotification(t.bookingDeleted, 'success');
+                return;
+            } catch (apiError) {
+                console.log('API delete failed, falling back to direct Supabase:', apiError);
+            }
+            
+            // Fallback to direct Supabase if API fails
+            const { error } = await supabase
+                .from('bookings')
+                .delete()
+                .eq('id', eventId);
+
+            if (error) throw error;
+
+            events = events.filter(e => e.id != eventId);
+            renderCalendar();
+            updateStatus();
+            showNotification(t.bookingDeleted, 'success');
+        } catch (error) {
+            console.error('Delete error:', error);
+            showNotification(t.deleteError + error.message, 'error');
+        }
+    }
+
+    // Calendar functions
+    function renderCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const t = translations[currentLang];
+        
+        // Update month display
+        updateMonthDisplay();
+        
+        // Clear calendar
+        calendarEl.innerHTML = '';
+        
+        // Get first day of month and number of days
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        
+        // Add empty cells for days before month starts
+        for (let i = 0; i < firstDay; i++) {
+            const emptyDay = document.createElement('div');
+            emptyDay.className = 'calendar-day';
+            calendarEl.appendChild(emptyDay);
+        }
+        
+        // Add days of the month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayEl = document.createElement('div');
+            dayEl.className = 'calendar-day';
+            
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            
+            // Check if it's today
+            const today = new Date();
+            if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
+                dayEl.classList.add('today');
+            }
+            
+            dayEl.innerHTML = `<div class="day-number">${day}</div>`;
+            
+            // Add events for this day
+            const dayEvents = events.filter(event => event.date === dateStr);
+            dayEvents.forEach(event => {
+                const eventEl = document.createElement('div');
+                eventEl.className = 'event';
+                
+                // Mark user's own events with different color
+                if (currentUser && event.userId === currentUser.id) {
+                    eventEl.classList.add('own-event');
+                }
+                
+                // Convert times to 12-hour format
+                const startTime12hr = convertTo12Hour(event.startTime);
+                const endTime12hr = convertTo12Hour(event.endTime);
+                
+                const eventContent = document.createElement('div');
+                eventContent.innerHTML = `
+                    <strong>${event.title}</strong><br>
+                    <small>${startTime12hr} - ${endTime12hr}</small><br>
+                    <small>${t.by} ${(currentUser && event.userId === currentUser.id) ? (currentLang === 'ar' ? 'أنت' : 'You') : event.userName}</small>
+                `;
+                eventEl.appendChild(eventContent);
+                
+                // Add delete button for own events
+                if (currentUser && event.userId === currentUser.id) {
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-event';
+                    deleteBtn.innerHTML = '&times;';
+                    deleteBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        deleteEvent(event.id);
+                    };
+                    eventEl.appendChild(deleteBtn);
+                }
+                
+                dayEl.appendChild(eventEl);
+            });
+            
+            calendarEl.appendChild(dayEl);
+        }
+    }
+
+    // Helper function to convert 24-hour time to 12-hour format
+    function convertTo12Hour(time24) {
+        if (!time24) return '';
+        
+        const [hours, minutes] = time24.split(':');
+        let period = currentLang === 'ar' ? 'ص' : 'AM';
+        let hours12 = parseInt(hours, 10);
+        
+        if (hours12 >= 12) {
+            period = currentLang === 'ar' ? 'م' : 'PM';
+            if (hours12 > 12) {
+                hours12 -= 12;
+            }
+        } else if (hours12 === 0) {
+            hours12 = 12;
+        }
+        
+        return `${hours12}:${minutes} ${period}`;
+    }
+
+    function updateStatus() {
+        const t = translations[currentLang];
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
+        const timeStr = now.toTimeString().substring(0,5);
+        
+        const todayEvents = events.filter(event => event.date === todayStr)
+                                 .sort((a, b) => a.startTime.localeCompare(b.startTime));
+        
+        let currentStatus = t.available;
+        let nextEventInfo = t.noBookings;
+        
+        // Check current status
+        for (const event of todayEvents) {
+            if (timeStr >= event.startTime && timeStr < event.endTime) {
+                currentStatus = t.booked;
+                const endTime12hr = convertTo12Hour(event.endTime);
+                nextEventInfo = `${t.currentlyBooked} ${event.title} (${t.until} ${endTime12hr})`;
+                break;
+            }
+        }
+        
+        // Find next event if available
+        if (currentStatus === t.available) {
+            const nextEvent = todayEvents.find(event => event.startTime > timeStr);
+            if (nextEvent) {
+                const startTime12hr = convertTo12Hour(nextEvent.startTime);
+                nextEventInfo = `${t.nextBooking} ${nextEvent.title} ${t.at} ${startTime12hr}`;
+            }
+        }
+        
+        // Update DOM
+        currentStatusEl.innerHTML = `
+            <i class="fas fa-circle"></i>
+            <span>${currentStatus}</span>
+        `;
+        currentStatusEl.className = `status-indicator status-${currentStatus === t.available ? 'available' : 'booked'}`;
+        nextEventInfoEl.innerHTML = `
+            <i class="fas fa-info-circle"></i>
+            <span>${nextEventInfo}</span>
+        `;
+    }
+
+    // UI Functions
+    function showModal(modalId) {
+        document.getElementById(modalId).style.display = 'flex';
+        
+        // Reset character counter when event modal is shown
+        if (modalId === 'event-modal') {
+            updateCharCounter(0);
+        }
+    }
+
+    function hideModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+        // Clear errors
+        if (modalId === 'login-modal') {
+            document.getElementById('login-error').style.display = 'none';
+        } else if (modalId === 'signup-modal') {
+            document.getElementById('signup-error').style.display = 'none';
+        }
+    }
+
+    function showError(elementId, message) {
+        const element = document.getElementById(elementId);
+        element.innerHTML = `<i class="fas fa-exclamation-circle"></i> <span>${message}</span>`;
+        element.style.display = 'flex';
+    }
+
+    function showMessage(message, type, elementId = null) {
+        if (elementId) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<i class="fas fa-check-circle"></i> <span>${message}</span>`;
+            element.style.display = 'flex';
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000);
+        } else {
+            showNotification(message, type);
+        }
+    }
+    
+    // Update character counter for title field
+    function updateCharCounter(count) {
+        const t = translations[currentLang];
+        titleCounterEl.textContent = `${count}/40`;
+        titleCounterEl.className = 'char-counter';
+        
+        if (count >= 35) {
+            titleCounterEl.classList.add('warning');
+        }
+        
+        if (count >= 40) {
+            titleCounterEl.classList.add('error');
+        }
+    }
+
+    // Initialize the application
+    function init() {
+        checkAuthStatus();
+        startAutoRefresh(); // Start the auto-refresh when page loads
+
+        renderCalendar();
+        updateStatus();
+        
+        // Event listeners
+        document.getElementById('prev-month').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        });
+        
+        document.getElementById('next-month').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        });
+        
+        document.getElementById('today-btn').addEventListener('click', () => {
+            currentDate = new Date();
+            renderCalendar();
+        });
+        
+        // Update the add event button click handler
+        document.getElementById('add-event').addEventListener('click', () => {
+            showModal('event-modal');
+            // Set default date to today and min date to today
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('event-date');
+            dateInput.value = today;
+            dateInput.min = today;
+        });
+        
+        document.getElementById('load-data').addEventListener('click', loadData);
+        
+        // Form submissions
+        eventFormEl.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const t = translations[currentLang];
+            const title = document.getElementById('event-title').value;
+            const date = document.getElementById('event-date').value;
+            const startTime = document.getElementById('event-start').value;
+            const endTime = document.getElementById('event-end').value;
+            
+            // Validate title length
+            if (title.length > 40) {
+                showNotification(t.charLimit, 'error');
+                return;
+            }
+            
+            // Validate date is not in the past
+            const today = new Date().toISOString().split('T')[0];
+            if (date < today) {
+                showNotification(t.pastDateError, 'error');
+                return;
+            }
+            
+            // Validate start time is before end time
+            if (startTime >= endTime) {
+                showNotification(t.timeError, 'error');
+                return;
+            }
+            
+            saveEvent({ title, date, startTime, endTime });
+            hideModal('event-modal');
+            eventFormEl.reset();
+        });
+        
+        // Title character counter
+        document.getElementById('event-title').addEventListener('input', (e) => {
+            updateCharCounter(e.target.value.length);
+        });
+        
+        loginFormEl.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            login(email, password);
+        });
+        
+        signupFormEl.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const t = translations[currentLang];
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm').value;
+            
+            if (password !== confirmPassword) {
+                showError('signup-error', t.passwordMismatch);
+                return;
+            }
+            
+            signup(email, password);
+        });
+        
+        // Modal cancel buttons
+        document.getElementById('cancel-event').addEventListener('click', () => hideModal('event-modal'));
+        document.getElementById('cancel-login').addEventListener('click', () => hideModal('login-modal'));
+        document.getElementById('cancel-signup').addEventListener('click', () => hideModal('signup-modal'));
+        
+        // Language toggle
+        langToggleEl.addEventListener('click', () => {
+            currentLang = currentLang === 'en' ? 'ar' : 'en';
+            applyTranslations(currentLang);
+            renderCalendar();
+            updateStatus();
+            updateAuthUI();
+        });
+    }
+
+    // Start the    // Start the application
+    document.addEventListener('DOMContentLoaded', () => {
+        init();
+        applyTranslations(currentLang); // Apply initial translations
+    });
+</script>
+</body>
+</html>
