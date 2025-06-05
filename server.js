@@ -7,8 +7,9 @@ const auth = require('basic-auth');
 const app = express();
 
 // Supabase setup - USE ENVIRONMENT VARIABLES IN PRODUCTION
-const supabaseUrl = "https://iwjsexdylledniwqaxkf.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3anNleGR5bGxlZG5pd3FheGtmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODk2NzQ2MywiZXhwIjoyMDY0NTQzNDYzfQ.42su_3gNVRjypePkXn-55jFr8lbZLUy3BJ7TBqTNurk";
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
 
 // Add validation to fail fast if missing
 if (!supabaseUrl || !supabaseKey) {
