@@ -1,15 +1,15 @@
+// server.js - Updated version
+
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
-const auth = require('basic-auth');
 
 const app = express();
 
 // Supabase setup - USE ENVIRONMENT VARIABLES IN PRODUCTION
-// Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
+const supabaseUrl = "https://iwjsexdylledniwqaxkf.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3anNleGR5bGxlZG5pd3FheGtmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODk2NzQ2MywiZXhwIjoyMDY0NTQzNDYzfQ.42su_3gNVRjypePkXn-55jFr8lbZLUy3BJ7TBqTNurk";
 
 // Add validation to fail fast if missing
 if (!supabaseUrl || !supabaseKey) {
@@ -27,11 +27,35 @@ app.use(cors({
     process.env.FRONTEND_URL || 'http://localhost:3000',
     'https://*.onrender.com'
   ],
-  methods: ['GET', 'POST', 'OPTIONS', 'HEAD', 'DELETE']
+  methods: ['GET', 'POST', 'OPTIONS', 'HEAD', 'DELETE'],
+  credentials: true
 }));
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Authentication middleware
+const authenticate = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Unauthorized - No token provided' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      return res.status(401).json({ error: 'Unauthorized - Invalid token' });
+    }
+
+    req.user = user;
+    next();
+  } catch (err) {
+    console.error('Authentication error:', err);
+    res.status(500).json({ error: 'Authentication failed' });
+  }
+};
 
 // HEAD endpoint
 app.head('/api/data', (req, res) => {
@@ -39,9 +63,7 @@ app.head('/api/data', (req, res) => {
   res.status(200).end();
 });
 
-// GET all bookings - with user emails fetched separately
-// GET all bookings - with user emails fetched separately
-// GET all bookings - with user emails fetched separately
+// GET all bookings
 app.get('/api/data', async (req, res) => {
   try {
     // First, get all bookings
@@ -96,19 +118,9 @@ app.get('/api/data', async (req, res) => {
   }
 });
 
-// POST new bookings - no need to store email separately
-app.post('/api/data', async (req, res) => {
+// POST new bookings
+app.post('/api/data', authenticate, async (req, res) => {
   try {
-    // Get user info from auth header
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    // Verify user
-    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.split(' ')[1]);
-    if (authError) throw authError;
-
     if (!Array.isArray(req.body)) {
       return res.status(400).json({ error: 'Data must be an array' });
     }
@@ -139,7 +151,7 @@ app.post('/api/data', async (req, res) => {
       date: event.date,
       start_time: event.startTime,
       end_time: event.endTime,
-      user_id: user.id // Only store user_id, not email
+      user_id: req.user.id
     }));
 
     const { data, error } = await supabase
@@ -155,8 +167,23 @@ app.post('/api/data', async (req, res) => {
 });
 
 // DELETE booking
-app.delete('/api/data/:id', async (req, res) => {
+app.delete('/api/data/:id', authenticate, async (req, res) => {
   try {
+    // First check if the booking belongs to the user
+    const { data: booking, error: fetchError } = await supabase
+      .from('bookings')
+      .select('user_id')
+      .eq('id', req.params.id)
+      .single();
+
+    if (fetchError) throw fetchError;
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+    if (booking.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'You can only delete your own bookings' });
+    }
+
     const { error } = await supabase
       .from('bookings')
       .delete()
@@ -167,6 +194,63 @@ app.delete('/api/data/:id', async (req, res) => {
   } catch (err) {
     console.error('Supabase delete error:', err);
     res.status(500).json({ error: 'Failed to delete event' });
+  }
+});
+
+// Auth endpoints
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password
+    });
+
+    if (error) throw error;
+    res.json({ success: true, message: 'Please check your email for verification link' });
+  } catch (err) {
+    console.error('Signup error:', err);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) throw error;
+    res.json({ 
+      success: true, 
+      user: data.user,
+      session: data.session 
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(401).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/logout', authenticate, async (req, res) => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Logout error:', err);
+    res.status(500).json({ error: 'Failed to logout' });
+  }
+});
+
+app.get('/api/auth/user', authenticate, async (req, res) => {
+  try {
+    res.json({ user: req.user });
+  } catch (err) {
+    console.error('User fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
 
