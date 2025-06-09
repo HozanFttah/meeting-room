@@ -77,6 +77,13 @@
         input:invalid {
             border-color: var(--danger-color);
         }
+.show-more-btn.secondary {
+    font-size: 12px;      /* smaller text */
+    padding: 4px 8px;     /* smaller button */
+    height: auto;         /* adjust if needed */
+    width: auto;          /* or set specific width */
+}
+
 
         input:invalid:focus {
             box-shadow: 0 0 0 3px rgba(255, 118, 117, 0.2);
@@ -938,23 +945,19 @@
     <div class="lang-toggle" id="lang-toggle">
         <i class="fas fa-language" style="font-size: 1.2rem;"></i>
     </div>
-    
-    <!-- Supabase SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-<script>
-    // Supabase configuration
-   // Initialize Supabase client
-const supabaseUrl = 'https://iwjsexdylledniwqaxkf.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3anNleGR5bGxlZG5pd3FheGtmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODk2NzQ2MywiZXhwIjoyMDY0NTQzNDYzfQ.42su_3gNVRjypePkXn-55jFr8lbZLUy3BJ7TBqTNurk';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+    
+<!-- In the script section of index.html, replace the entire script with: -->
+
+<script>
     // Data storage and initialization
     let events = [];
     let currentDate = new Date();
     let currentUser = null;
     let refreshInterval = null;
     let currentLang = 'en'; // Default language
+    let sessionToken = localStorage.getItem('supabase_session_token') || null;
+    let expandedDays = new Set();
 
     // DOM Elements
     const calendarEl = document.getElementById('calendar');
@@ -1027,7 +1030,9 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             deleteConfirm: "Are you sure you want to delete this booking?",
             ownBookingsOnly: "You can only delete your own bookings",
             eventNotFound: "Event not found",
-            charLimit: "Title must be 40 characters or less"
+            charLimit: "Title must be 40 characters or less",
+            showMore: "Show more",
+            showLess: "Show less"
         },
         ar: {
             title: "توافر غرفة الاجتماعات",
@@ -1077,7 +1082,9 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             deleteConfirm: "هل أنت متأكد أنك تريد حذف هذا الحجز؟",
             ownBookingsOnly: "يمكنك فقط حذف الحجوزات الخاصة بك",
             eventNotFound: "الحدث غير موجود",
-            charLimit: "يجب أن يكون العنوان 40 حرفًا أو أقل"
+            charLimit: "يجب أن يكون العنوان 40 حرفًا أو أقل",
+            showMore: "عرض المزيد",
+            showLess: "عرض أقل"
         }
     };
 
@@ -1089,15 +1096,6 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         
         const t = translations[lang];
         
-        // Update all elements with data-i18n attribute
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if (t[key]) {
-                el.textContent = t[key];
-            }
-        });
-        
-        // Update specific elements
         document.querySelector('h1').textContent = t.title;
         document.getElementById('login-btn').innerHTML = `<i class="fas fa-sign-in-alt"></i> ${t.login}`;
         document.getElementById('signup-btn').innerHTML = `<i class="fas fa-user-plus"></i> ${t.signup}`;
@@ -1106,54 +1104,12 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         document.getElementById('load-data').innerHTML = `<i class="fas fa-sync-alt"></i> ${t.refreshData}`;
         document.getElementById('file-status').innerHTML = `<i class="fas fa-cloud"></i> <span>${t.connected}</span>`;
         
-        // Update auth status
         if (currentUser) {
             authStatusEl.innerHTML = `<i class="fas fa-user-circle"></i> <span>${t.loggedInAs}${currentUser.email}</span>`;
         } else {
             authStatusEl.innerHTML = `<i class="fas fa-user-circle"></i> <span>${t.notLoggedIn}</span>`;
         }
         
-        // Update modal titles
-        document.querySelector('#login-modal .modal-title').innerHTML = `<i class="fas fa-sign-in-alt"></i> <span>${t.loginTitle}</span>`;
-        document.querySelector('#signup-modal .modal-title').innerHTML = `<i class="fas fa-user-plus"></i> <span>${t.signupTitle}</span>`;
-        document.querySelector('#event-modal .modal-title').innerHTML = `<i class="fas fa-calendar-plus"></i> <span>${t.addBookingTitle}</span>`;
-        
-        // Update form labels
-        document.querySelector('#login-form label[for="login-email"]').innerHTML = `<i class="fas fa-envelope"></i> <span>${t.email}</span>`;
-        document.querySelector('#login-form label[for="login-password"]').innerHTML = `<i class="fas fa-lock"></i> <span>${t.password}</span>`;
-        document.querySelector('#signup-form label[for="signup-email"]').innerHTML = `<i class="fas fa-envelope"></i> <span>${t.email}</span>`;
-        document.querySelector('#signup-form label[for="signup-password"]').innerHTML = `<i class="fas fa-lock"></i> <span>${t.password}</span>`;
-        document.querySelector('#signup-form label[for="signup-confirm"]').innerHTML = `<i class="fas fa-lock"></i> <span>${t.confirmPassword}</span>`;
-        document.querySelector('#event-form label[for="event-title"]').innerHTML = `<i class="fas fa-heading"></i> <span>${t.eventTitle}</span>`;
-        document.querySelector('#event-form label[for="event-date"]').innerHTML = `<i class="fas fa-calendar-day"></i> <span>${t.date}</span>`;
-        document.querySelector('#event-form label[for="event-start"]').innerHTML = `<i class="fas fa-clock"></i> <span>${t.startTime}</span>`;
-        document.querySelector('#event-form label[for="event-end"]').innerHTML = `<i class="fas fa-clock"></i> <span>${t.endTime}</span>`;
-        
-        // Update buttons
-        document.querySelector('#login-form button[type="submit"]').innerHTML = `<i class="fas fa-sign-in-alt"></i> <span>${t.login}</span>`;
-        document.querySelector('#signup-form button[type="submit"]').innerHTML = `<i class="fas fa-user-plus"></i> <span>${t.signup}</span>`;
-        document.querySelector('#event-form button[type="submit"]').innerHTML = `<i class="fas fa-save"></i> <span>${t.save}</span>`;
-        document.getElementById('cancel-login').innerHTML = `<i class="fas fa-times"></i> <span>${t.cancel}</span>`;
-        document.getElementById('cancel-signup').innerHTML = `<i class="fas fa-times"></i> <span>${t.cancel}</span>`;
-        document.getElementById('cancel-event').innerHTML = `<i class="fas fa-times"></i> <span>${t.cancel}</span>`;
-        
-        // Update status bar
-        document.querySelector('.status-bar strong').textContent = `${t.currentStatus}`;
-        
-        // Update day headers
-        if (lang === 'ar') {
-            const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-            document.querySelectorAll('.day-header').forEach((el, index) => {
-                el.textContent = days[index];
-            });
-        } else {
-            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            document.querySelectorAll('.day-header').forEach((el, index) => {
-                el.textContent = days[index];
-            });
-        }
-        
-        // Update month display
         updateMonthDisplay();
     }
 
@@ -1194,24 +1150,18 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         
         notificationContainer.appendChild(notification);
         
-        // Trigger reflow to enable animation
         void notification.offsetWidth;
-        
         notification.classList.add('show');
         
-        // Close button
         notification.querySelector('.notification-close').addEventListener('click', () => {
             closeNotification(notification);
         });
         
-        // Auto-close after duration
         if (duration) {
             setTimeout(() => {
                 closeNotification(notification);
             }, duration);
         }
-        
-        return notification;
     }
     
     function closeNotification(notification) {
@@ -1221,15 +1171,59 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         }, 300);
     }
 
+    // Check for existing session on page load
+    async function checkExistingSession() {
+        if (!sessionToken) return false;
+        
+        try {
+            const response = await fetch('/api/auth/user', {
+                headers: {
+                    'Authorization': `Bearer ${sessionToken}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                currentUser = data.user;
+                return true;
+            }
+        } catch (error) {
+            console.error('Session check error:', error);
+        }
+        
+        sessionToken = null;
+        localStorage.removeItem('supabase_session_token');
+        return false;
+    }
+
     // Authentication functions
     async function checkAuthStatus() {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            currentUser = user;
+            if (sessionToken) {
+                const response = await fetch('/api/auth/user', {
+                    headers: {
+                        'Authorization': `Bearer ${sessionToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser = data.user;
+                    updateAuthUI();
+                    loadData();
+                    return;
+                }
+            }
+            
+            currentUser = null;
+            sessionToken = null;
+            localStorage.removeItem('supabase_session_token');
             updateAuthUI();
-            loadData();
         } catch (error) {
             console.error('Auth check error:', error);
+            currentUser = null;
+            sessionToken = null;
+            localStorage.removeItem('supabase_session_token');
             updateAuthUI();
         }
     }
@@ -1262,14 +1256,24 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         const t = translations[currentLang];
         
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
             });
 
-            if (error) throw error;
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Login failed');
+            }
 
             currentUser = data.user;
+            sessionToken = data.session.access_token;
+            localStorage.setItem('supabase_session_token', sessionToken);
+            
             hideModal('login-modal');
             updateAuthUI();
             showNotification(t.loginSuccess, 'success');
@@ -1282,12 +1286,19 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         const t = translations[currentLang];
         
         try {
-            const { data, error } = await supabase.auth.signUp({
-                email: email,
-                password: password
+            const response = await fetch('/api/auth/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
             });
 
-            if (error) throw error;
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Signup failed');
+            }
 
             showMessage(t.signupSuccess, 'success', 'signup-success');
             document.getElementById('signup-form').reset();
@@ -1301,10 +1312,20 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         const t = translations[currentLang];
         
         try {
-            const { error } = await supabase.auth.signOut();
-            if (error) throw error;
-            
+            const response = await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${sessionToken}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Logout failed');
+            }
+
             currentUser = null;
+            sessionToken = null;
+            localStorage.removeItem('supabase_session_token');
             updateAuthUI();
             showNotification(t.logoutSuccess, 'success');
         } catch (error) {
@@ -1320,56 +1341,27 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         try {
             fileStatusEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${t.loading}</span>`;
             
-            // First try to fetch from our API endpoint
-            try {
-                const response = await fetch('/api/data');
-                if (!response.ok) throw new Error('API request failed');
-                const data = await response.json();
-                
-                events = data.map(item => ({
-                    id: item.id,
-                    title: item.title,
-                    date: item.date,
-                    startTime: item.startTime,
-                    endTime: item.endTime,
-                    userId: item.userId,
-                    userName: item.userName || 'Unknown'
-                }));
-                
-                renderCalendar();
-                updateStatus();
-                fileStatusEl.innerHTML = `<i class="fas fa-cloud"></i> <span>${t.connected}</span>`;
-                return;
-            } catch (apiError) {
-                console.log('API fetch failed, falling back to direct Supabase:', apiError);
+            const headers = {};
+            if (sessionToken) {
+                headers['Authorization'] = `Bearer ${sessionToken}`;
             }
             
-            // Fallback to direct Supabase query if API fails
-            const { data, error } = await supabase
-                .from('bookings')
-                .select(`
-                    id,
-                    title,
-                    date,
-                    start_time,
-                    end_time,
-                    user_id
-                `)
-                .order('date', { ascending: true });
-
-            if (error) throw error;
+            const response = await fetch('/api/data', { headers });
             
-            // For direct Supabase access, we can't get the email, so just show "You" for own events
+            if (!response.ok) {
+                throw new Error('Failed to load data');
+            }
+            
+            const data = await response.json();
+            
             events = data.map(item => ({
                 id: item.id,
                 title: item.title,
                 date: item.date,
-                startTime: item.start_time,
-                endTime: item.end_time,
-                userId: item.user_id,
-                userName: (currentUser && item.user_id === currentUser.id) ? 
-                    (currentLang === 'ar' ? 'أنت' : 'You') : 
-                    (currentLang === 'ar' ? 'مستخدم' : 'User')
+                startTime: item.startTime,
+                endTime: item.endTime,
+                userId: item.userId,
+                userName: item.userName || 'Unknown'
             }));
             
             renderCalendar();
@@ -1383,39 +1375,31 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
     }
 
     function startAutoRefresh() {
-        // Load data immediately
         loadData();
-        
-        // Then set up the interval (3000ms = 3 seconds)
         refreshInterval = setInterval(loadData, 3000);
     }
 
     async function saveEvent(eventData) {
         const t = translations[currentLang];
         
-        if (!currentUser) {
+        if (!currentUser || !sessionToken) {
             showNotification(t.loginError, 'error');
             return;
         }
 
-        // Validate title length
         if (eventData.title.length > 40) {
             showNotification(t.charLimit, 'error');
             return;
         }
 
-        // Check for time slot conflicts
         const conflicts = events.filter(event => {
-            // Only check events on the same date
             if (event.date !== eventData.date) return false;
             
-            // Convert times to minutes for easier comparison
             const newStart = convertTimeToMinutes(eventData.startTime);
             const newEnd = convertTimeToMinutes(eventData.endTime);
             const existingStart = convertTimeToMinutes(event.startTime);
             const existingEnd = convertTimeToMinutes(event.endTime);
             
-            // Check for overlap
             return (newStart < existingEnd && newEnd > existingStart);
         });
 
@@ -1431,71 +1415,25 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         }
 
         try {
-            const id = Date.now();
-            
-            // First try to save via our API endpoint
-            try {
-                const response = await fetch('/api/data', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${await supabase.auth.getSession().then(({ data }) => data.session?.access_token)}`
-                    },
-                    body: JSON.stringify([{
-                        id: id,
-                        title: eventData.title,
-                        date: eventData.date,
-                        startTime: eventData.startTime,
-                        endTime: eventData.endTime
-                    }])
-                });
-                
-                if (!response.ok) throw new Error('API save failed');
-                
-                events.push({
-                    id: id,
+            const response = await fetch('/api/data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionToken}`
+                },
+                body: JSON.stringify([{
                     title: eventData.title,
                     date: eventData.date,
                     startTime: eventData.startTime,
-                    endTime: eventData.endTime,
-                    userId: currentUser.id,
-                    userName: currentUser.email.split('@')[0]
-                });
-
-                renderCalendar();
-                updateStatus();
-                showNotification(t.bookingSaved, 'success');
-                return;
-            } catch (apiError) {
-                console.log('API save failed, falling back to direct Supabase:', apiError);
+                    endTime: eventData.endTime
+                }])
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to save event');
             }
             
-            // Fallback to direct Supabase if API fails
-            const { data, error } = await supabase
-                .from('bookings')
-                .insert([{
-                    id: id,
-                    title: eventData.title,
-                    date: eventData.date,
-                    start_time: eventData.startTime,
-                    end_time: eventData.endTime,
-                    user_id: currentUser.id
-                }]);
-
-            if (error) throw error;
-
-            events.push({
-                id: id,
-                title: eventData.title,
-                date: eventData.date,
-                startTime: eventData.startTime,
-                endTime: eventData.endTime,
-                userId: currentUser.id,
-                userName: currentLang === 'ar' ? 'أنت' : 'You'
-            });
-
-            renderCalendar();
-            updateStatus();
+            await loadData();
             showNotification(t.bookingSaved, 'success');
         } catch (error) {
             console.error('Save error:', error);
@@ -1503,7 +1441,6 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         }
     }
 
-    // Helper function to convert time string to minutes
     function convertTimeToMinutes(timeStr) {
         const [hours, minutes] = timeStr.split(':').map(Number);
         return hours * 60 + minutes;
@@ -1528,37 +1465,18 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         }
 
         try {
-            // First try to delete via API
-            try {
-                const response = await fetch(`/api/data/${eventId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${await supabase.auth.getSession().then(({ data }) => data.session?.access_token)}`
-                    }
-                });
-                
-                if (!response.ok) throw new Error('API delete failed');
-                
-                events = events.filter(e => e.id != eventId);
-                renderCalendar();
-                updateStatus();
-                showNotification(t.bookingDeleted, 'success');
-                return;
-            } catch (apiError) {
-                console.log('API delete failed, falling back to direct Supabase:', apiError);
+            const response = await fetch(`/api/data/${eventId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${sessionToken}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to delete event');
             }
             
-            // Fallback to direct Supabase if API fails
-            const { error } = await supabase
-                .from('bookings')
-                .delete()
-                .eq('id', eventId);
-
-            if (error) throw error;
-
-            events = events.filter(e => e.id != eventId);
-            renderCalendar();
-            updateStatus();
+            await loadData();
             showNotification(t.bookingDeleted, 'success');
         } catch (error) {
             console.error('Delete error:', error);
@@ -1568,85 +1486,148 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
     // Calendar functions
     function renderCalendar() {
+        // Load expanded days from localStorage
+        const savedExpandedDays = localStorage.getItem('expandedDays');
+        if (savedExpandedDays) {
+            expandedDays = new Set(JSON.parse(savedExpandedDays));
+        }
+
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
         const t = translations[currentLang];
+        const MAX_VISIBLE_EVENTS = 1; // Show only 3 events by default
         
-        // Update month display
         updateMonthDisplay();
-        
-        // Clear calendar
         calendarEl.innerHTML = '';
         
-        // Get first day of month and number of days
         const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         
-        // Add empty cells for days before month starts
         for (let i = 0; i < firstDay; i++) {
             const emptyDay = document.createElement('div');
             emptyDay.className = 'calendar-day';
             calendarEl.appendChild(emptyDay);
         }
         
-        // Add days of the month
         for (let day = 1; day <= daysInMonth; day++) {
             const dayEl = document.createElement('div');
             dayEl.className = 'calendar-day';
             
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             
-            // Check if it's today
             const today = new Date();
             if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
                 dayEl.classList.add('today');
             }
             
-            dayEl.innerHTML = `<div class="day-number">${day}</div>`;
+            const dayNumber = document.createElement('div');
+            dayNumber.className = 'day-number';
+            dayNumber.textContent = day;
+            dayEl.appendChild(dayNumber);
             
-            // Add events for this day
             const dayEvents = events.filter(event => event.date === dateStr);
-            dayEvents.forEach(event => {
-                const eventEl = document.createElement('div');
-                eventEl.className = 'event';
-                
-                // Mark user's own events with different color
-                if (currentUser && event.userId === currentUser.id) {
-                    eventEl.classList.add('own-event');
-                }
-                
-                // Convert times to 12-hour format
-                const startTime12hr = convertTo12Hour(event.startTime);
-                const endTime12hr = convertTo12Hour(event.endTime);
-                
-                const eventContent = document.createElement('div');
-                eventContent.innerHTML = `
-                    <strong>${event.title}</strong><br>
-                    <small>${startTime12hr} - ${endTime12hr}</small><br>
-                    <small>${t.by} ${(currentUser && event.userId === currentUser.id) ? (currentLang === 'ar' ? 'أنت' : 'You') : event.userName}</small>
-                `;
-                eventEl.appendChild(eventContent);
-                
-                // Add delete button for own events
-                if (currentUser && event.userId === currentUser.id) {
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'delete-event';
-                    deleteBtn.innerHTML = '&times;';
-                    deleteBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        deleteEvent(event.id);
-                    };
-                    eventEl.appendChild(deleteBtn);
-                }
-                
-                dayEl.appendChild(eventEl);
+            const hasHiddenEvents = dayEvents.length > MAX_VISIBLE_EVENTS;
+            const visibleEvents = hasHiddenEvents ? dayEvents.slice(0, MAX_VISIBLE_EVENTS) : dayEvents;
+            const hiddenEvents = hasHiddenEvents ? dayEvents.slice(MAX_VISIBLE_EVENTS) : [];
+            
+            // Render visible events
+            visibleEvents.forEach(event => {
+                dayEl.appendChild(createEventElement(event));
             });
+            
+            // Render "Show More" button if there are hidden events
+            if (hasHiddenEvents) {
+                const showMoreBtn = document.createElement('button');
+                showMoreBtn.className = 'show-more-btn secondary';
+                
+                // Check if this date is in our expanded set
+                const isExpanded = expandedDays.has(dateStr);
+                
+                if (isExpanded) {
+                    showMoreBtn.innerHTML = `<i class="fas fa-chevron-up"></i> ${t.showLess}`;
+                } else {
+                    showMoreBtn.innerHTML = `<i class="fas fa-chevron-down"></i> ${t.showMore} (${hiddenEvents.length})`;
+                }
+                
+                showMoreBtn.dataset.date = dateStr;
+                showMoreBtn.addEventListener('click', toggleHiddenEvents);
+                dayEl.appendChild(showMoreBtn);
+                
+                // Create container for hidden events
+                const hiddenEventsContainer = document.createElement('div');
+                hiddenEventsContainer.className = 'hidden-events';
+                hiddenEventsContainer.dataset.date = dateStr;
+                hiddenEventsContainer.style.display = isExpanded ? 'block' : 'none';
+                
+                hiddenEvents.forEach(event => {
+                    hiddenEventsContainer.appendChild(createEventElement(event));
+                });
+                
+                dayEl.appendChild(hiddenEventsContainer);
+            }
             
             calendarEl.appendChild(dayEl);
         }
     }
 
-    // Helper function to convert 24-hour time to 12-hour format
+    // Helper function to create event element
+    function createEventElement(event) {
+        const t = translations[currentLang];
+        const eventEl = document.createElement('div');
+        eventEl.className = 'event';
+        
+        if (currentUser && event.userId === currentUser.id) {
+            eventEl.classList.add('own-event');
+        }
+        
+        const startTime12hr = convertTo12Hour(event.startTime);
+        const endTime12hr = convertTo12Hour(event.endTime);
+        
+        const eventContent = document.createElement('div');
+        eventContent.innerHTML = `
+            <strong>${event.title}</strong><br>
+            <small>${startTime12hr} - ${endTime12hr}</small><br>
+            <small>${t.by} ${(currentUser && event.userId === currentUser.id) ? (currentLang === 'ar' ? 'أنت' : 'You') : event.userName}</small>
+        `;
+        eventEl.appendChild(eventContent);
+        
+        if (currentUser && event.userId === currentUser.id) {
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-event';
+            deleteBtn.innerHTML = '&times;';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                deleteEvent(event.id);
+            };
+            eventEl.appendChild(deleteBtn);
+        }
+        
+        return eventEl;
+    }
+
+    // Toggle hidden events
+    function toggleHiddenEvents(e) {
+        const t = translations[currentLang];
+        const btn = e.target.closest('.show-more-btn');
+        const date = btn.dataset.date;
+        const dayElement = btn.closest('.calendar-day');
+        const hiddenEventsContainer = dayElement.querySelector('.hidden-events');
+        const isHidden = hiddenEventsContainer.style.display === 'none';
+        
+        if (isHidden) {
+            hiddenEventsContainer.style.display = 'block';
+            btn.innerHTML = `<i class="fas fa-chevron-up"></i> ${t.showLess}`;
+            expandedDays.add(date);
+        } else {
+            hiddenEventsContainer.style.display = 'none';
+            btn.innerHTML = `<i class="fas fa-chevron-down"></i> ${t.showMore} (${hiddenEventsContainer.children.length})`;
+            expandedDays.delete(date);
+        }
+        
+        // Save to localStorage
+        localStorage.setItem('expandedDays', JSON.stringify(Array.from(expandedDays)));
+    }
+
     function convertTo12Hour(time24) {
         if (!time24) return '';
         
@@ -1678,7 +1659,6 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         let currentStatus = t.available;
         let nextEventInfo = t.noBookings;
         
-        // Check current status
         for (const event of todayEvents) {
             if (timeStr >= event.startTime && timeStr < event.endTime) {
                 currentStatus = t.booked;
@@ -1688,7 +1668,6 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             }
         }
         
-        // Find next event if available
         if (currentStatus === t.available) {
             const nextEvent = todayEvents.find(event => event.startTime > timeStr);
             if (nextEvent) {
@@ -1697,7 +1676,6 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             }
         }
         
-        // Update DOM
         currentStatusEl.innerHTML = `
             <i class="fas fa-circle"></i>
             <span>${currentStatus}</span>
@@ -1713,7 +1691,6 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
     function showModal(modalId) {
         document.getElementById(modalId).style.display = 'flex';
         
-        // Reset character counter when event modal is shown
         if (modalId === 'event-modal') {
             updateCharCounter(0);
         }
@@ -1721,7 +1698,6 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
     function hideModal(modalId) {
         document.getElementById(modalId).style.display = 'none';
-        // Clear errors
         if (modalId === 'login-modal') {
             document.getElementById('login-error').style.display = 'none';
         } else if (modalId === 'signup-modal') {
@@ -1748,7 +1724,6 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         }
     }
     
-    // Update character counter for title field
     function updateCharCounter(count) {
         const t = translations[currentLang];
         titleCounterEl.textContent = `${count}/40`;
@@ -1764,33 +1739,44 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
     }
 
     // Initialize the application
-    function init() {
-        checkAuthStatus();
-        startAutoRefresh(); // Start the auto-refresh when page loads
-
+    async function init() {
+        const hasSession = await checkExistingSession();
+        
+        if (hasSession) {
+            updateAuthUI();
+            showNotification(translations[currentLang].loginSuccess, 'success', 2000);
+        } else {
+            updateAuthUI();
+        }
+        
+        startAutoRefresh();
         renderCalendar();
         updateStatus();
         
         // Event listeners
         document.getElementById('prev-month').addEventListener('click', () => {
+            expandedDays.clear();
+            localStorage.removeItem('expandedDays');
             currentDate.setMonth(currentDate.getMonth() - 1);
             renderCalendar();
         });
         
         document.getElementById('next-month').addEventListener('click', () => {
+            expandedDays.clear();
+            localStorage.removeItem('expandedDays');
             currentDate.setMonth(currentDate.getMonth() + 1);
             renderCalendar();
         });
         
         document.getElementById('today-btn').addEventListener('click', () => {
+            expandedDays.clear();
+            localStorage.removeItem('expandedDays');
             currentDate = new Date();
             renderCalendar();
         });
         
-        // Update the add event button click handler
         document.getElementById('add-event').addEventListener('click', () => {
             showModal('event-modal');
-            // Set default date to today and min date to today
             const today = new Date().toISOString().split('T')[0];
             const dateInput = document.getElementById('event-date');
             dateInput.value = today;
@@ -1799,7 +1785,6 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         
         document.getElementById('load-data').addEventListener('click', loadData);
         
-        // Form submissions
         eventFormEl.addEventListener('submit', (e) => {
             e.preventDefault();
             const t = translations[currentLang];
@@ -1808,20 +1793,17 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             const startTime = document.getElementById('event-start').value;
             const endTime = document.getElementById('event-end').value;
             
-            // Validate title length
             if (title.length > 40) {
                 showNotification(t.charLimit, 'error');
                 return;
             }
             
-            // Validate date is not in the past
             const today = new Date().toISOString().split('T')[0];
             if (date < today) {
                 showNotification(t.pastDateError, 'error');
                 return;
             }
             
-            // Validate start time is before end time
             if (startTime >= endTime) {
                 showNotification(t.timeError, 'error');
                 return;
@@ -1832,7 +1814,6 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             eventFormEl.reset();
         });
         
-        // Title character counter
         document.getElementById('event-title').addEventListener('input', (e) => {
             updateCharCounter(e.target.value.length);
         });
@@ -1859,12 +1840,10 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             signup(email, password);
         });
         
-        // Modal cancel buttons
         document.getElementById('cancel-event').addEventListener('click', () => hideModal('event-modal'));
         document.getElementById('cancel-login').addEventListener('click', () => hideModal('login-modal'));
         document.getElementById('cancel-signup').addEventListener('click', () => hideModal('signup-modal'));
         
-        // Language toggle
         langToggleEl.addEventListener('click', () => {
             currentLang = currentLang === 'en' ? 'ar' : 'en';
             applyTranslations(currentLang);
@@ -1874,11 +1853,10 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         });
     }
 
-    // Start the    // Start the application
+    // Start the application
     document.addEventListener('DOMContentLoaded', () => {
         init();
-        applyTranslations(currentLang); // Apply initial translations
+        applyTranslations(currentLang);
     });
-</script>
-</body>
+</script></body>
 </html>
