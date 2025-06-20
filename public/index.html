@@ -1032,7 +1032,9 @@
             eventNotFound: "Event not found",
             charLimit: "Title must be 40 characters or less",
             showMore: "Show more",
-            showLess: "Show less"
+            showLess: "Show less",
+    	    emailDomainError: "Only @drd-me.org email addresses are allowed",
+
         },
         ar: {
             title: "توافر غرفة الاجتماعات",
@@ -1084,7 +1086,9 @@
             eventNotFound: "الحدث غير موجود",
             charLimit: "يجب أن يكون العنوان 40 حرفًا أو أقل",
             showMore: "عرض المزيد",
-            showLess: "عرض أقل"
+            showLess: "عرض أقل",
+    	emailDomainError: "مسموح فقط بعناوين البريد الإلكتروني @drd-me.org",
+
         }
     };
 
@@ -1172,29 +1176,50 @@
     }
 
     // Check for existing session on page load
-    async function checkExistingSession() {
-        if (!sessionToken) return false;
-        
-        try {
-            const response = await fetch('/api/auth/user', {
-                headers: {
-                    'Authorization': `Bearer ${sessionToken}`
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                currentUser = data.user;
-                return true;
-            }
-        } catch (error) {
-            console.error('Session check error:', error);
-        }
-        
-        sessionToken = null;
-        localStorage.removeItem('supabase_session_token');
-        return false;
+async function checkExistingSession() {
+  try {
+    const sessionData = JSON.parse(localStorage.getItem('supabase_session_data'));
+    if (!sessionData) throw new Error('No session');
+
+    const { access_token, refresh_token, expires_at } = sessionData;
+    const now = Math.floor(Date.now() / 1000);
+
+    // Refresh token if expired
+    if (expires_at < now) {
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token })
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+
+      localStorage.setItem('supabase_session_data', JSON.stringify(result.session));
+      sessionToken = result.session.access_token;
+    } else {
+      sessionToken = access_token;
     }
+
+    // Get user
+    const userResponse = await fetch('/api/auth/user', {
+      headers: { 'Authorization': `Bearer ${sessionToken}` }
+    });
+
+    const userData = await userResponse.json();
+    if (!userResponse.ok) throw new Error(userData.error);
+
+    currentUser = userData.user;
+    return true;
+  } catch (error) {
+    console.warn('Session invalid:', error.message);
+    localStorage.removeItem('supabase_session_data');
+    sessionToken = null;
+    currentUser = null;
+    return false;
+  }
+}
+
 
     // Authentication functions
     async function checkAuthStatus() {
@@ -1217,7 +1242,7 @@
             
             currentUser = null;
             sessionToken = null;
-            localStorage.removeItem('supabase_session_token');
+localStorage.removeItem('supabase_session_data');
             updateAuthUI();
         } catch (error) {
             console.error('Auth check error:', error);
@@ -1272,7 +1297,8 @@
 
             currentUser = data.user;
             sessionToken = data.session.access_token;
-            localStorage.setItem('supabase_session_token', sessionToken);
+localStorage.setItem('supabase_session_data', JSON.stringify(data.session));
+sessionToken = data.session.access_token;
             
             hideModal('login-modal');
             updateAuthUI();
@@ -1308,31 +1334,32 @@
         }
     }
 
-    async function logout() {
-        const t = translations[currentLang];
-        
-        try {
-            const response = await fetch('/api/auth/logout', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${sessionToken}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Logout failed');
+async function logout() {
+    const t = translations[currentLang];
+    
+    try {
+        const response = await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${sessionToken}`
             }
+        });
 
-            currentUser = null;
-            sessionToken = null;
-            localStorage.removeItem('supabase_session_token');
-            updateAuthUI();
-            showNotification(t.logoutSuccess, 'success');
-        } catch (error) {
-            console.error('Logout error:', error);
-            showNotification(t.deleteError + error.message, 'error');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Logout failed');
         }
+
+        currentUser = null;
+        sessionToken = null;
+        localStorage.removeItem('supabase_session_token');
+        updateAuthUI();
+        showNotification(t.logoutSuccess, 'success');
+    } catch (error) {
+        console.error('Logout error:', error);
+        showNotification(t.logout + ' failed: ' + error.message, 'error'); // Changed this line
     }
+}
 
     // Data functions
     async function loadData() {
@@ -1740,14 +1767,15 @@
 
     // Initialize the application
     async function init() {
-        const hasSession = await checkExistingSession();
-        
-        if (hasSession) {
-            updateAuthUI();
-            showNotification(translations[currentLang].loginSuccess, 'success', 2000);
-        } else {
-            updateAuthUI();
-        }
+const hasSession = await checkExistingSession();
+
+updateAuthUI();
+if (hasSession) {
+    loadData();  // <- Important to call loadData()
+    addEventBtn.disabled = false;
+    addEventBtn.title = translations[currentLang].addBooking;
+}
+
         
         startAutoRefresh();
         renderCalendar();
@@ -1822,6 +1850,14 @@
             e.preventDefault();
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
+
+
+  if (!email.endsWith('@drd-me.org')) {
+    showError('login-error', translations[currentLang].emailDomainError);
+    return;
+  }
+
+
             login(email, password);
         });
         
@@ -1831,6 +1867,11 @@
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
             const confirmPassword = document.getElementById('signup-confirm').value;
+
+  if (!email.endsWith('@drd-me.org')) {
+    showError('signup-error', t.emailDomainError);
+    return;
+  }
             
             if (password !== confirmPassword) {
                 showError('signup-error', t.passwordMismatch);
