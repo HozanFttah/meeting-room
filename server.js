@@ -8,10 +8,10 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 
 // Supabase setup - USE ENVIRONMENT VARIABLES IN PRODUCTION
-// Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
+const supabaseUrl = "https://iwjsexdylledniwqaxkf.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3anNleGR5bGxlZG5pd3FheGtmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODk2NzQ2MywiZXhwIjoyMDY0NTQzNDYzfQ.42su_3gNVRjypePkXn-55jFr8lbZLUy3BJ7TBqTNurk";
 
+const ALLOWED_DOMAIN = '@drd-me.org';
 
 // Add validation to fail fast if missing
 if (!supabaseUrl || !supabaseKey) {
@@ -203,6 +203,11 @@ app.delete('/api/data/:id', authenticate, async (req, res) => {
 app.post('/api/auth/signup', async (req, res) => {
   try {
     const { email, password } = req.body;
+    if (!email.endsWith(ALLOWED_DOMAIN)) {
+      return res.status(400).json({ error: `Only ${ALLOWED_DOMAIN} email addresses are allowed` });
+    }
+
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password
@@ -219,6 +224,12 @@ app.post('/api/auth/signup', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+
+     if (!email.endsWith(ALLOWED_DOMAIN)) {
+      return res.status(401).json({ error: `Only ${ALLOWED_DOMAIN} email addresses are allowed` });
+    }
+
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -255,6 +266,19 @@ app.get('/api/auth/user', authenticate, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
+app.post('/api/auth/refresh', async (req, res) => {
+  try {
+    const { refresh_token } = req.body;
+    const { data, error } = await supabase.auth.refreshSession({ refresh_token });
+
+    if (error) throw error;
+    res.json({ session: data.session });
+  } catch (err) {
+    console.error('Refresh error:', err);
+    res.status(401).json({ error: 'Failed to refresh session' });
+  }
+});
+
 
 // Serve frontend
 app.get('*', (req, res) => {
