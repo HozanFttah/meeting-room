@@ -1248,7 +1248,7 @@ localStorage.removeItem('supabase_session_data');
             console.error('Auth check error:', error);
             currentUser = null;
             sessionToken = null;
-            localStorage.removeItem('supabase_session_token');
+localStorage.removeItem('supabase_session_data');
             updateAuthUI();
         }
     }
@@ -1352,7 +1352,7 @@ async function logout() {
 
         currentUser = null;
         sessionToken = null;
-        localStorage.removeItem('supabase_session_token');
+localStorage.removeItem('supabase_session_data');
         updateAuthUI();
         showNotification(t.logoutSuccess, 'success');
     } catch (error) {
