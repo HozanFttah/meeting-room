@@ -730,18 +730,18 @@
     <div class="container">
         <div class="header-container" style="display: flex; align-items: center; gap: 15px; margin-bottom: 1.5rem;">
             <img src="logo.png" alt="Company Logo" style="height: 120px;" onerror="this.style.display='none'">
-            <h1>Meeting Room Availability</h1>
+            <h1>توافر غرفة الاجتماعات</h1>
         </div>
         
         <!-- Authentication Section -->
         <div class="auth-section" id="auth-section">
             <div class="user-info" id="user-info">
                 <i class="fas fa-user-circle"></i>
-                <span id="auth-status">Not logged in</span>
+                <span id="auth-status">غير مسجل دخول</span>
             </div>
             <div class="auth-buttons" id="auth-buttons">
-                <button id="login-btn"><i class="fas fa-sign-in-alt"></i> Login</button>
-                <button class="secondary" id="signup-btn"><i class="fas fa-user-plus"></i> Sign Up</button>
+                <button id="login-btn"><i class="fas fa-sign-in-alt"></i> تسجيل دخول</button>
+                <button class="secondary" id="signup-btn"><i class="fas fa-user-plus"></i> انشاء حساب</button>
             </div>
         </div>
         
@@ -757,8 +757,8 @@
         </div>
         
         <div class="controls">
-            <button id="today-btn"><i class="fas fa-calendar-day"></i> Today</button>
-            <button id="add-event" disabled title="Please login to add bookings"><i class="fas fa-plus-circle"></i> Add Booking</button>
+            <button id="today-btn"><i class="fas fa-calendar-day"></i> اليوم</button>
+            <button id="add-event" disabled title="Please login to add bookings"><i class="fas fa-plus-circle"></i> إضافة حجز</button>
         </div>
         
         <div class="calendar-grid" id="calendar-header">
@@ -775,15 +775,15 @@
         
         <div class="status-bar">
             <div>
-                <strong>Current Status:</strong> 
+                <strong>حالة الغرفة:</strong> 
                 <span class="status-indicator status-available" id="current-status">
                     <i class="fas fa-circle"></i>
-                    <span>Available</span>
+                    <span>متوفرة</span>
                 </span>
             </div>
             <div class="next-event" id="next-event-info">
                 <i class="fas fa-info-circle"></i>
-                <span>No bookings today</span>
+                <span>لا توجد حجوزات اليوم</span>
             </div>
         </div>
         
@@ -801,20 +801,20 @@
         <div class="modal-content">
             <div class="modal-title">
                 <i class="fas fa-sign-in-alt"></i>
-                <span>Login</span>
+                <span>تسجيل الدخول</span>
             </div>
             <form id="login-form">
                 <div class="form-group">
                     <label for="login-email">
                         <i class="fas fa-envelope"></i>
-                        <span>Email</span>
+                        <span>الايميل</span>
                     </label>
                     <input type="email" id="login-email" required>
                 </div>
                 <div class="form-group">
                     <label for="login-password">
                         <i class="fas fa-lock"></i>
-                        <span>Password</span>
+                        <span>كلمة المرور</span>
                     </label>
                     <input type="password" id="login-password" required>
                 </div>
@@ -825,11 +825,11 @@
                 <div class="form-actions">
                     <button type="button" class="secondary" id="cancel-login">
                         <i class="fas fa-times"></i>
-                        <span>Cancel</span>
+                        <span>إلغاء</span>
                     </button>
                     <button type="submit">
                         <i class="fas fa-sign-in-alt"></i>
-                        <span>Login</span>
+                        <span>تسجيل الدخول</span>
                     </button>
                 </div>
             </form>
@@ -841,27 +841,27 @@
         <div class="modal-content">
             <div class="modal-title">
                 <i class="fas fa-user-plus"></i>
-                <span>Sign Up</span>
+                <span>إنشاء حساب</span>
             </div>
             <form id="signup-form">
                 <div class="form-group">
                     <label for="signup-email">
                         <i class="fas fa-envelope"></i>
-                        <span>Email</span>
+                        <span>الإيميل</span>
                     </label>
                     <input type="email" id="signup-email" required>
                 </div>
                 <div class="form-group">
                     <label for="signup-password">
                         <i class="fas fa-lock"></i>
-                        <span>Password</span>
+                        <span>كلمة المرور</span>
                     </label>
                     <input type="password" id="signup-password" required minlength="6">
                 </div>
                 <div class="form-group">
                     <label for="signup-confirm">
                         <i class="fas fa-lock"></i>
-                        <span>Confirm Password</span>
+                        <span>تأكيد كلمة المرور</span>
                     </label>
                     <input type="password" id="signup-confirm" required minlength="6">
                 </div>
@@ -880,7 +880,7 @@
                     </button>
                     <button type="submit">
                         <i class="fas fa-user-plus"></i>
-                        <span>Sign Up</span>
+                        <span>إنشاء حساب</span>
                     </button>
                 </div>
             </form>
@@ -892,13 +892,13 @@
         <div class="modal-content">
             <div class="modal-title">
                 <i class="fas fa-calendar-plus"></i>
-                <span>Add New Booking</span>
+                <span>إضافة حجز جديد</span>
             </div>
             <form id="event-form">
                 <div class="form-group">
                     <label for="event-title">
                         <i class="fas fa-heading"></i>
-                        <span>Title</span>
+                        <span>العنوان</span>
                     </label>
     <input type="text" id="event-title" required maxlength="40" dir="auto">
                     <div class="char-counter" id="title-counter">0/40</div>
@@ -906,32 +906,32 @@
                 <div class="form-group">
                     <label for="event-date">
                         <i class="fas fa-calendar-day"></i>
-                        <span>Date</span>
+                        <span>التاريخ</span>
                     </label>
                     <input type="date" id="event-date" required>
                 </div>
                 <div class="form-group">
                     <label for="event-start">
                         <i class="fas fa-clock"></i>
-                        <span>Start Time</span>
+                        <span>وقت البدء</span>
                     </label>
                     <input type="time" id="event-start" required>
                 </div>
                 <div class="form-group">
                     <label for="event-end">
                         <i class="fas fa-clock"></i>
-                        <span>End Time</span>
+                        <span>وقت الانتهاء</span>
                     </label>
                     <input type="time" id="event-end" required>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="secondary" id="cancel-event">
                         <i class="fas fa-times"></i>
-                        <span>Cancel</span>
+                        <span>إلغاء</span>
                     </button>
                     <button type="submit">
                         <i class="fas fa-save"></i>
-                        <span>Save</span>
+                        <span>حفظ</span>
                     </button>
                 </div>
             </form>
@@ -1031,8 +1031,8 @@
             ownBookingsOnly: "You can only delete your own bookings",
             eventNotFound: "Event not found",
             charLimit: "Title must be 40 characters or less",
-            showMore: "Show more",
-            showLess: "Show less",
+            showMore: "عرض المزيد",
+            showLess: "عرض أقل",
     	    emailDomainError: "Only @drd-me.org email addresses are allowed",
 
         },
