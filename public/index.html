@@ -1437,7 +1437,7 @@ localStorage.removeItem('supabase_session_data');
                 return `${start} - ${end}`;
             }).join(', ');
             
-            showNotification(`Time slot conflicts with existing booking(s): ${conflictTimes}`, 'error');
+            showNotification(`يوجد حجز اخر في هذا الموعد، أختر موعداً اخر: ${conflictTimes}`, 'error');
             return;
         }
 
